@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Generated packages and local releases
+build/
+dist/
+release/
+*.spec
+
+# Local editor and system files
+.DS_Store
+.idea/
+.vscode/
+*.log
