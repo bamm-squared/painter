@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Select Python 3.12 in the release job before validating its tag.
+
 ## 0.1.2
 
 - Make the font dialog regression test compare two distinct installed fonts.
