@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PIL import Image, ImageFont
+from PIL import Image
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtTest import QTest
@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QApplication
 
 from painter.app import MainWindow
 from painter.document import Document
+from painter.fonts import font_file_for_family, load_font
 from painter.objects import PaintObject, object_mask, wrapped_text_lines
 
 
@@ -131,15 +132,17 @@ def test_font_dialog_applies_selected_font_and_cancel_keeps_text():
     obj = window.selected_object()
     before = window.document.layers[0].image.tobytes()
 
-    with patch("painter.app.QFontDialog.getFont", return_value=(True, QFont("Liberation Serif", 28))):
+    installed_font = font_file_for_family("Arial")
+    assert os.path.isfile(installed_font)
+    with patch("painter.app.QFontDialog.getFont", return_value=(True, QFont("Arial", 28))):
         window.choose_object_font()
-    assert obj.font_name == "Liberation Serif"
-    assert "Serif" in obj.font_family
+    assert obj.font_name == "Arial"
+    assert obj.font_family == installed_font
     assert window.document.layers[0].image.tobytes() != before
 
     with patch("painter.app.QFontDialog.getFont", return_value=(False, QFont("DejaVu Sans", 12))):
         window.choose_object_font()
-    assert obj.font_name == "Liberation Serif" and obj.font_size == 28
+    assert obj.font_name == "Arial" and obj.font_size == 28
     window.dirty = False
     window.close()
 
@@ -379,7 +382,7 @@ def test_new_rectangle_and_oval_rotate_from_orientation_handle():
 
 
 def test_text_box_wraps_to_width_and_overflows_only_at_bottom_or_for_one_glyph():
-    font = ImageFont.truetype("DejaVuSans.ttf", 18)
+    font = load_font("DejaVuSans.ttf", 18)
     width = max(font.getbbox(word)[2] for word in ("Hello", "world")) + 1
     assert wrapped_text_lines("Hello world", font, width) == ["Hello", "world"]
     assert wrapped_text_lines("WW", font, 1) == ["W", "W"]
