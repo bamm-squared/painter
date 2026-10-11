@@ -127,22 +127,38 @@ def test_font_dialog_applies_selected_font_and_cancel_keeps_text():
     app = QApplication.instance() or QApplication([])
     window = MainWindow()
     window.replace_document(Document(240, 100, transparent=True))
-    window.document.add_object(PaintObject("text", [(10, 10)], text="Hello", font_size=28))
+    arial = font_file_for_family("Arial")
+    assert os.path.isfile(arial)
+    window.document.add_object(PaintObject("text", [(10, 10)], text="Hello", font_size=28,
+                                           font_family=arial, font_name="Arial"))
     window.select_object(0)
     obj = window.selected_object()
     before = window.document.layers[0].image.tobytes()
+    assert window.document.layers[0].image.getbbox() is not None
 
-    installed_font = font_file_for_family("Arial")
-    assert os.path.isfile(installed_font)
-    with patch("painter.app.QFontDialog.getFont", return_value=(True, QFont("Arial", 28))):
+    # Select an installed font that actually produces different glyphs on this OS.
+    selected = None
+    for name in ("Times New Roman", "Consolas", "Georgia", "Courier New"):
+        font = QFont(name, 28)
+        path = font_file_for_family(font.family(), font.styleName() or "Regular")
+        if not os.path.isfile(path):
+            continue
+        candidate = obj.copy()
+        candidate.font_family = path
+        if object_mask(candidate, (240, 100)).tobytes() != object_mask(obj, (240, 100)).tobytes():
+            selected = (font, path)
+            break
+    assert selected is not None, "No second installed font renders differently from Arial"
+    font, path = selected
+    with patch("painter.app.QFontDialog.getFont", return_value=(True, font)):
         window.choose_object_font()
-    assert obj.font_name == "Arial"
-    assert obj.font_family == installed_font
+    assert obj.font_name == font.family()
+    assert obj.font_family == path
     assert window.document.layers[0].image.tobytes() != before
 
     with patch("painter.app.QFontDialog.getFont", return_value=(False, QFont("DejaVu Sans", 12))):
         window.choose_object_font()
-    assert obj.font_name == "Arial" and obj.font_size == 28
+    assert obj.font_name == font.family() and obj.font_size == 28
     window.dirty = False
     window.close()
 

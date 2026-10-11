@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- Make the font dialog regression test compare two distinct installed fonts.
+
 ## 0.1.1
 
 - Install the Linux Qt EGL runtime library in the release runner.
